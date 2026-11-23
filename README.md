@@ -27,6 +27,10 @@ host$                                   # ホストの画面に着信が出る
 
 ## インストール
 
+[Releases](https://github.com/perorin0418/naisen/releases) から、OS と CPU に合ったファイル（Linux・macOS は `.tar.gz`、Windows は `.zip`）を取ってきて、
+中の `naisen`（Windows は `naisen.exe`）を PATH の通った場所に置きます。`checksums.txt` で中身を確かめられます。
+Go があれば次でも入れられます。
+
 ```bash
 go install github.com/perorin0418/naisen/cmd/naisen@latest
 ```
