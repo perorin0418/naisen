@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>naisen</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --text: #1d2228; --muted: #69727d; --line: #e1e4e8;
+  --accent: #1f6feb; --accent-weak: #e7f0ff; --ok: #1a7f37; --ng: #cf222e; --hover: #f0f3f6;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15181c; --panel: #1d2127; --text: #e6e8eb; --muted: #9aa3ad; --line: #2e343c;
+    --accent: #4c8dff; --accent-weak: #1b2a44; --ok: #3fb950; --ng: #f85149; --hover: #252a31;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 14px/1.5 "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+  display: flex; flex-direction: column;
+}
+header {
+  display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+  border-bottom: 1px solid var(--line); background: var(--panel);
+}
+header h1 { font-size: 16px; margin: 0; letter-spacing: .04em; }
+.state { display: flex; align-items: center; gap: 6px; color: var(--muted); min-width: 0; }
+.state span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.on { background: var(--ok); }
+.bar {
+  display: flex; align-items: center; gap: 8px; padding: 8px 16px;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.bar input[type=text] {
+  flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--text); font: 13px ui-monospace, Consolas, monospace;
+}
+button {
+  padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel);
+  color: var(--text); font: inherit; cursor: pointer;
+}
+button:hover:not(:disabled) { background: var(--hover); }
+button:disabled { opacity: .45; cursor: default; }
+label.force { display: flex; align-items: center; gap: 4px; color: var(--muted); white-space: nowrap; }
+main { flex: 1; overflow: auto; position: relative; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 6px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { position: sticky; top: 0; background: var(--bg); color: var(--muted); font-weight: 600; font-size: 12px; z-index: 1; }
+td.name { width: 100%; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+td.num, th.num { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+tbody tr { cursor: default; }
+tbody tr:hover { background: var(--hover); }
+tbody tr.dir td.name { font-weight: 600; }
+.icon { display: inline-block; width: 1.4em; }
+.empty { padding: 40px; text-align: center; color: var(--muted); }
+.drop {
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--accent-weak) 88%, transparent);
+  border: 3px dashed var(--accent); font-size: 18px; color: var(--text); z-index: 10; text-align: center; padding: 24px;
+}
+.drop.show { display: flex; }
+footer { border-top: 1px solid var(--line); background: var(--panel); padding: 8px 16px; font-size: 12px; }
+.local { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#log { max-height: 7.5em; overflow: auto; margin-top: 4px; font-family: ui-monospace, Consolas, monospace; }
+#log div.ok { color: var(--ok); }
+#log div.ng { color: var(--ng); }
+#log div.info { color: var(--muted); }
+.hint { color: var(--muted); font-size: 12px; padding: 6px 16px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>☎ naisen <span id="line"></span></h1>
+  <div class="state"><span class="dot" id="dot"></span><span id="state">確認しています…</span></div>
+</header>
+<div class="bar">
+  <button id="up" title="上のディレクトリへ">↑</button>
+  <input type="text" id="path" spellcheck="false" placeholder="相手側のディレクトリ（Enter で移動）" aria-label="相手側のディレクトリ">
+  <button id="reload" title="一覧を更新">更新</button>
+  <label class="force" title="置き先にすでにあれば上書きする（-f）"><input type="checkbox" id="force">上書き</label>
+</div>
+<div class="hint">ファイルやフォルダーをここにドロップすると相手側に送ります。一覧の項目はウィンドウの外へドラッグすると受け取れます。</div>
+<main id="main">
+  <table>
+    <thead><tr><th>名前</th><th class="num">サイズ</th><th class="num">更新日時</th><th></th></tr></thead>
+    <tbody id="list"></tbody>
+  </table>
+  <div class="empty" id="empty" hidden></div>
+</main>
+<footer>
+  <div class="local">「受け取る」の置き先（こちら側）: <span id="local"></span></div>
+  <div id="log" aria-live="polite"></div>
+</footer>
+<div class="drop" id="drop"><div>ドロップすると相手側の<br><b id="dropPath"></b><br>に送ります</div></div>
+
+<script>
+"use strict";
+const token = new URLSearchParams(location.search).get("t") || "";
+const $ = (id) => document.getElementById(id);
+let cur = null;        // 表示中の一覧（Listing）
+let inCall = false;
+let draggingOut = false;
+
+function log(msg, cls) {
+  const d = document.createElement("div");
+  d.className = cls || "info";
+  d.textContent = new Date().toLocaleTimeString() + "  " + msg;
+  $("log").appendChild(d);
+  $("log").scrollTop = $("log").scrollHeight;
+}
+
+async function api(method, path, params, body) {
+  const q = new URLSearchParams(params || {});
+  const res = await fetch(path + (q.toString() ? "?" + q : ""), {
+    method, body, headers: { "X-Naisen-Token": token },
+  });
+  let data = null;
+  try { data = await res.json(); } catch (_) {}
+  if (!res.ok) throw new Error((data && data.error) || res.statusText);
+  return data;
+}
+
+function size(n) {
+  if (n < 1024) return n + " B";
+  const u = "KMGTPE"; let i = -1;
+  do { n /= 1024; i++; } while (n >= 1024 && i < u.length - 1);
+  return n.toFixed(1) + " " + u[i] + "iB";
+}
+
+function joinPath(dir, name) {
+  const sep = cur ? cur.sep : "/";
+  return dir.endsWith(sep) ? dir + name : dir + sep + name;
+}
+
+async function refreshStatus() {
+  try {
+    const s = await api("GET", "/api/status");
+    $("local").textContent = s.local;
+    $("line").textContent = "番号 " + s.line;
+    document.title = "naisen 番号 " + s.line;
+    const was = inCall;
+    inCall = s.inCall;
+    $("dot").className = "dot" + (inCall ? " on" : "");
+    const first = (s.message || "").split("\n");
+    $("state").textContent = inCall ? first.slice(1, 2).map((x) => x.trim()).join("  ") : s.message;
+    $("state").title = s.message || "";
+    if (inCall && !was) load(cur ? cur.path : "");
+    if (!inCall) showEmpty("通話中ではありません。通話が始まると、ここに相手側のファイルが出ます。");
+  } catch (e) {
+    $("dot").className = "dot";
+    $("state").textContent = "naisen gui とつながりません（" + e.message + "）";
+  }
+}
+
+function showEmpty(msg) {
+  cur = inCall ? cur : null;
+  if (!inCall) { $("list").textContent = ""; $("path").value = ""; }
+  $("empty").textContent = msg;
+  $("empty").hidden = false;
+  updateButtons();
+}
+
+function updateButtons() {
+  $("up").disabled = !cur || cur.parent === cur.path;
+  $("reload").disabled = !inCall;
+}
+
+async function load(path) {
+  if (!inCall) return;
+  try {
+    const l = await api("GET", "/api/ls", { path });
+    cur = l;
+    render();
+  } catch (e) {
+    log("一覧を取れません: " + e.message, "ng");
+    if (cur) $("path").value = cur.path;
+  }
+}
+
+function render() {
+  $("path").value = cur.path;
+  $("dropPath").textContent = cur.path;
+  const tb = $("list");
+  tb.textContent = "";
+  for (const e of cur.entries) {
+    const tr = document.createElement("tr");
+    if (e.dir) tr.className = "dir";
+    const full = joinPath(cur.path, e.name);
+    const name = document.createElement("td");
+    name.className = "name";
+    name.innerHTML = '<span class="icon"></span>';
+    name.firstChild.textContent = e.dir ? "📁" : (e.link ? "🔗" : "📄");
+    name.appendChild(document.createTextNode(e.name));
+    name.title = full;
+    const sz = document.createElement("td");
+    sz.className = "num";
+    sz.textContent = e.dir ? "" : size(e.size);
+    const mt = document.createElement("td");
+    mt.className = "num";
+    mt.textContent = new Date(e.mtime * 1000).toLocaleString();
+    const act = document.createElement("td");
+    const b = document.createElement("button");
+    b.textContent = "受け取る";
+    b.onclick = () => receive(full, e.name);
+    act.appendChild(b);
+    tr.append(name, sz, mt, act);
+    if (e.dir) tr.ondblclick = () => load(full);
+    // ウィンドウの外（エクスプローラーなど）へのドラッグで受け取る（Edge・Chrome の DownloadURL）
+    tr.draggable = true;
+    tr.ondragstart = (ev) => {
+      draggingOut = true;
+      const fname = e.dir ? e.name + ".zip" : e.name;
+      const url = location.origin + "/api/download/" + encodeURIComponent(fname) +
+        "?" + new URLSearchParams({ t: token, path: full });
+      ev.dataTransfer.setData("DownloadURL", "application/octet-stream:" + fname + ":" + url);
+      ev.dataTransfer.effectAllowed = "copy";
+    };
+    tr.ondragend = () => { draggingOut = false; };
+    tb.appendChild(tr);
+  }
+  $("empty").hidden = cur.entries.length > 0;
+  $("empty").textContent = "空のディレクトリです";
+  updateButtons();
+}
+
+async function receive(full, name) {
+  log("受け取っています: " + full);
+  try {
+    const r = await api("POST", "/api/get", { path: full, force: $("force").checked ? "1" : "" });
+    log(r.msg, "ok");
+  } catch (e) {
+    log(name + ": " + e.message, "ng");
+  }
+}
+
+// ---- ドロップで送る ----
+let dragDepth = 0;
+const isFiles = (ev) => !draggingOut && ev.dataTransfer && Array.from(ev.dataTransfer.types).includes("Files");
+window.addEventListener("dragenter", (ev) => {
+  if (!isFiles(ev)) return;
+  ev.preventDefault();
+  dragDepth++;
+  if (cur && inCall) $("drop").classList.add("show");
+});
+window.addEventListener("dragover", (ev) => {
+  if (!isFiles(ev)) return;
+  ev.preventDefault();
+  ev.dataTransfer.dropEffect = cur && inCall ? "copy" : "none";
+});
+window.addEventListener("dragleave", (ev) => {
+  if (!isFiles(ev)) return;
+  if (--dragDepth <= 0) { dragDepth = 0; $("drop").classList.remove("show"); }
+});
+window.addEventListener("drop", async (ev) => {
+  if (!isFiles(ev)) return;
+  ev.preventDefault();
+  dragDepth = 0;
+  $("drop").classList.remove("show");
+  if (!cur || !inCall) { log("通話中でないので送れません", "ng"); return; }
+  // DataTransfer はイベントの間しか使えないので、先にエントリーを取り出す
+  const entries = [];
+  for (const it of ev.dataTransfer.items) {
+    const en = it.webkitGetAsEntry && it.webkitGetAsEntry();
+    if (en) entries.push(en);
+  }
+  const files = [];
+  try {
+    for (const en of entries) await collect(en, "", files);
+  } catch (e) {
+    log("ドロップされたファイルを読めません: " + e.message, "ng");
+    return;
+  }
+  if (!files.length) { log("送るファイルがありません（空のフォルダーは送れません）", "ng"); return; }
+  send(files, cur.path);
+});
+
+function collect(entry, prefix, out) {
+  return new Promise((resolve, reject) => {
+    const rel = prefix + entry.name;
+    if (entry.isFile) {
+      entry.file((f) => { out.push({ rel, file: f }); resolve(); }, reject);
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const all = [];
+      const next = () => reader.readEntries(async (batch) => {
+        if (!batch.length) {
+          try { for (const c of all) await collect(c, rel + "/", out); resolve(); } catch (e) { reject(e); }
+          return;
+        }
+        all.push(...batch);
+        next();
+      }, reject);
+      next();
+    } else {
+      resolve();
+    }
+  });
+}
+
+function send(files, dir) {
+  const total = files.reduce((n, f) => n + f.file.size, 0);
+  const tops = [...new Set(files.map((f) => f.rel.split("/")[0]))];
+  const fd = new FormData();
+  for (const f of files) fd.append("f:" + encodeURIComponent(f.rel), f.file, "x");
+  const line = document.createElement("div");
+  line.className = "info";
+  $("log").appendChild(line);
+  const show = (t) => { line.textContent = new Date().toLocaleTimeString() + "  " + t; $("log").scrollTop = $("log").scrollHeight; };
+  show("送っています: " + tops.join(", ") + "（" + files.length + " ファイル、" + size(total) + "）");
+  const xhr = new XMLHttpRequest();
+  const q = new URLSearchParams({ dir, force: $("force").checked ? "1" : "" });
+  xhr.open("POST", "/api/upload?" + q);
+  xhr.setRequestHeader("X-Naisen-Token", token);
+  xhr.upload.onprogress = (e) => {
+    if (e.lengthComputable) show("送っています: " + tops.join(", ") + "  " + Math.floor(e.loaded / e.total * 100) + "%");
+  };
+  xhr.onload = () => {
+    let data = null;
+    try { data = JSON.parse(xhr.responseText); } catch (_) {}
+    if (xhr.status !== 200) {
+      line.className = "ng";
+      show("送れません: " + ((data && data.error) || xhr.statusText));
+      return;
+    }
+    line.remove();
+    for (const r of data) log(r.ok ? r.msg : r.name + ": " + r.msg, r.ok ? "ok" : "ng");
+    if (cur && cur.path === dir) load(dir);
+  };
+  xhr.onerror = () => { line.className = "ng"; show("送れません（naisen gui とつながりません）"); };
+  xhr.send(fd);
+}
+
+// ---- 操作 ----
+$("up").onclick = () => cur && load(cur.parent);
+$("reload").onclick = () => cur ? load(cur.path) : refreshStatus();
+$("path").addEventListener("keydown", (e) => { if (e.key === "Enter") load($("path").value.trim()); });
+
+// ウィンドウを閉じたことを知らせる（naisen gui が終わる）
+window.addEventListener("pagehide", () => {
+  navigator.sendBeacon("/api/bye?t=" + encodeURIComponent(token));
+});
+
+refreshStatus();
+setInterval(refreshStatus, 3000);
+</script>
+</body>
+</html>
