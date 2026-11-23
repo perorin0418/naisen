@@ -29,6 +29,7 @@ const usage = `naisen - koya の中と外で、ファイルとコマンドをや
   naisen status [--line N]                              このマシンの電話の状態を表示する
   naisen hangup [--line N]                              電話を切る
 
+  naisen self-update [--check]          最新版に更新する（GitHub Releases から取って、このファイルを置き換える）
   naisen version                        バージョンを表示する
   naisen help [コマンド]                 ヘルプを表示する
 
@@ -158,6 +159,7 @@ const hangupUsage = `使い方: naisen hangup [--line N]
 var helps = map[string]string{
 	"listen": listenUsage, "call": callUsage, "list": listUsage, "run": runUsage, "send": sendUsage,
 	"get": getUsage, "gui": guiUsage, "status": statusUsage, "hangup": hangupUsage,
+	"self-update": selfUpdateUsage,
 }
 
 func main() {
@@ -165,6 +167,7 @@ func main() {
 }
 
 func run(args []string) int {
+	removeOldExecutable()
 	if len(args) > 0 {
 		switch args[0] {
 		case "call":
@@ -183,6 +186,8 @@ func run(args []string) int {
 			return cmdStatus(args[1:])
 		case "hangup":
 			return cmdHangup(args[1:])
+		case "self-update":
+			return cmdSelfUpdate(args[1:])
 		case "listen":
 			return cmdListen(args[1:])
 		case "version", "--version":

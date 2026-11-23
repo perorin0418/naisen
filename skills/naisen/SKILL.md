@@ -86,6 +86,10 @@ koya の中で自動で取る内線（`naisen --auto --number 11`）が動いて
 Go があれば `go install github.com/perorin0418/naisen/cmd/naisen@latest` でも入る。
 ホストと koya の中の両方に、同じ版を入れる。入れるかどうか・どこに入れるかは利用者に確かめる。
 
+入っている naisen を最新版にするときは `naisen self-update`（新しい版があるかだけ見るなら `--check`）。
+実行中のバイナリを置き換えるので、実行する前に利用者に確かめる。ホスト側を更新するとき（`naisen run naisen self-update`）も同じ。
+起動中の電話は古い版のまま動くので、切って起動し直すまで新しい版にならない。
+
 ## 困ったとき
 
 - 「通話中ではありません」→ 通話していない。`naisen status` で状態を見て、上の「通話の始め方」へ。

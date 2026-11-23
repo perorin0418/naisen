@@ -36,6 +36,24 @@ go install github.com/perorin0418/naisen/cmd/naisen@latest
 ```
 
 ホストと koya の中の両方に入れます（同じ版を使ってください）。
+
+### 更新
+
+`naisen self-update` で、Releases の最新版に更新できます。この OS・CPU 用のファイルを取ってきて、
+`checksums.txt` の SHA-256 で確かめてから、実行中の `naisen`（シンボリックリンクならたどった先）を置き換えます。
+ホストと koya の中の両方で実行してください。
+
+```bash
+naisen self-update --check            # 新しい版があるかだけ見る（あれば終了コード 1）
+naisen self-update                    # 最新版にする
+naisen self-update --version v0.1.0   # その版にする（古い版に戻すときも）
+```
+
+- 起動中の naisen（待ち受け中・通話中の電話）は古い版のまま動きます。切ってから起動し直してください。
+- 置き場所に書き込めないとき（`/usr/local/bin` など）は、書き込める権限（`sudo` など）で実行します。
+- Windows では、実行中の `naisen.exe` を `naisen.exe.old` に退けてから置きます。`naisen.exe.old` は次に起動したときに消します。
+- 取得元は `NAISEN_RELEASE_URL` で変えられます。プロキシは `HTTPS_PROXY` などで指定します。
+- `self-update` は v0.1.0 にはありません。v0.1.0 からは、上の手順で一度入れ直してください。
 koya のコンテナはカレントディレクトリをマウントしているので、ホストでビルドしたバイナリ（Linux 用）を
 プロジェクトのディレクトリに置いて、koya の中から使うこともできます（`GOOS=linux go build -o bin/naisen ./cmd/naisen`）。
 
@@ -69,6 +87,7 @@ naisen gui [--line N] [--dir DIR] [--no-open]         ドラッグ&ドロップ�
 naisen status [--line N]                              このマシンの電話の状態を表示する
 naisen hangup [--line N]                              電話を切る
 
+naisen self-update [--check] [--version vX.Y.Z] [-f]   最新版に更新する（上の「更新」）
 naisen version / naisen help [コマンド]
 ```
 
@@ -246,6 +265,7 @@ naisen hangup
 | `NAISEN_LINE` | 単発コマンドと `naisen gui` で使う電話の番号（`--line` と同じ） |
 | `NAISEN_SHELL` | 相手から頼まれたコマンドを実行するシェル（既定 `sh -c`、Windows は `cmd /C`） |
 | `NAISEN_SOCK_DIR` | 制御ソケットを置くディレクトリ |
+| `NAISEN_RELEASE_URL` | `naisen self-update` の取得元（既定 `https://github.com/perorin0418/naisen/releases`） |
 
 ## 仕組み
 
