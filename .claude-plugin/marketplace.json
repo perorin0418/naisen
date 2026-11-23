@@ -1,0 +1,14 @@
+{
+  "name": "naisen",
+  "description": "naisen（koya の中と外でファイルとコマンドをやり取りする内線電話）の Claude Code 用マーケットプレイス（プラグイン naisen 1 つ）",
+  "owner": {
+    "name": "perorin0418"
+  },
+  "plugins": [
+    {
+      "name": "naisen",
+      "source": "./",
+      "description": "naisen の使い方を Claude Code に教えるスキル"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "naisen",
+  "description": "naisen の使い方を Claude Code に教えるスキル。koya のコンテナの中から、通話中のホストでコマンドを実行し、ファイルを送受信する",
+  "author": { "name": "perorin0418" },
+  "repository": "https://github.com/perorin0418/naisen"
+}

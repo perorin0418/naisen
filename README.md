@@ -39,6 +39,20 @@ go install github.com/perorin0418/naisen/cmd/naisen@latest
 koya のコンテナはカレントディレクトリをマウントしているので、ホストでビルドしたバイナリ（Linux 用）を
 プロジェクトのディレクトリに置いて、koya の中から使うこともできます（`GOOS=linux go build -o bin/naisen ./cmd/naisen`）。
 
+### Claude Code のプラグイン
+
+このリポジトリは Claude Code のプラグインのマーケットプレイス（プラグインの配布元）にもなっています。
+プラグイン `naisen` を入れると、Claude Code が naisen の使い方（単発コマンドでホストのコマンドを実行する・ファイルをやり取りする、
+通話の始め方、確認が要る操作）を知った状態で作業します。koya の中の Claude Code に入れておくと便利です。
+
+```
+/plugin marketplace add perorin0418/naisen
+/plugin install naisen@naisen
+```
+
+入れたあとは、「ホストで make test を実行して」のように頼むと、Claude Code が `naisen run` などを使います。
+`/naisen` でスキルを直接呼ぶこともできます。naisen のコマンドそのものは、上の手順で別に入れてください。
+
 ## 使い方
 
 ```
